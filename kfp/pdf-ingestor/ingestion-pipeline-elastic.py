@@ -6,7 +6,7 @@ from kfp import dsl, kubernetes, compiler
 from kfp.dsl import Artifact, Input, Output
 
 @dsl.component(
-    base_image="python:3 .11",
+    base_image="python:3.11",
     packages_to_install=[
         "langchain-community==0.3.8",
         "langchain==0.3.8",
