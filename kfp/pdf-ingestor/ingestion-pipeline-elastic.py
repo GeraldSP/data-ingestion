@@ -13,9 +13,6 @@ from kfp.dsl import Artifact, Input, Output
         "pypdf==4.0.2",
         "tqdm==4.66.2",
     ],
-    mounts=[
-        dsl.Mount(pvc="pdf-storage", mount_path="/data/pdfs")
-    ],
 )
 def format_documents(splits_artifact: Output[Artifact]):
     import json
@@ -74,9 +71,6 @@ def format_documents(splits_artifact: Output[Artifact]):
         "langchain-elasticsearch==0.3.0",
         "sentence-transformers==2.4.0",
         "einops==0.7.0",
-    ],
-    mounts=[
-        dsl.Mount(pvc="pdf-storage", mount_path="/data/pdfs")
     ],
 )
 def ingest_documents(input_artifact: Input[Artifact]):
@@ -142,14 +136,29 @@ def ingest_documents(input_artifact: Input[Artifact]):
 
 @dsl.pipeline(name="PDF Ingestion Pipeline")
 def ingestion_pipeline():
-    # volume = dsl.PipelineVolume(pvc="pdf-storage")
-    
+    pvc1 = kubernetes.CreatePVC(
+        pvc_name='pdf-storage',
+        access_modes=['ReadWriteOnce'],
+        size='5Gi',
+    )    
+
     format_docs_task = format_documents()
     format_docs_task.set_accelerator_type("nvidia.com/gpu").set_accelerator_limit("1")
+
+    kubernetes.mount_pvc(
+        format_docs_task,
+        pvc_name=pvc1.outputs['name'],
+        mount_path='/data/pdfs',
+    )
 
     ingest_docs_task = ingest_documents(input_artifact=format_docs_task.outputs["splits_artifact"])
     ingest_docs_task.set_accelerator_type("nvidia.com/gpu").set_accelerator_limit("1")
 
+    kubernetes.mount_pvc(
+        ingest_docs_task,
+        pvc_name=pvc1.outputs['name'],
+        mount_path='/data/pdfs',
+    )
     kubernetes.use_secret_as_env(
         ingest_docs_task,
         secret_name="elasticsearch-es-elastic-user",
