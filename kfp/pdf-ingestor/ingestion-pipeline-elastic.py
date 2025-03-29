@@ -136,14 +136,14 @@ def ingest_documents(input_artifact: Input[Artifact]):
 
 @dsl.pipeline(name="PDF Ingestion Pipeline")
 def ingestion_pipeline():
-    volume = dsl.PipelineVolume(pvc="pdf-storage")
+    # volume = dsl.PipelineVolume(pvc="pdf-storage")
     
     format_docs_task = format_documents()
-    format_docs_task.add_pvolumes({"/data/pdfs": volume})
+    format_docs_task.add_pvolumes({"/data/pdfs": dsl.Volume(pvc="pdf-storage")})
     format_docs_task.set_accelerator_type("nvidia.com/gpu").set_accelerator_limit("1")
 
     ingest_docs_task = ingest_documents(input_artifact=format_docs_task.outputs["splits_artifact"])
-    ingest_docs_task.add_pvolumes({"/data/pdfs": volume})
+    ingest_docs_task.add_pvolumes({"/data/pdfs": dsl.Volume(pvc="pdf-storage")})
     ingest_docs_task.set_accelerator_type("nvidia.com/gpu").set_accelerator_limit("1")
 
     kubernetes.use_secret_as_env(
