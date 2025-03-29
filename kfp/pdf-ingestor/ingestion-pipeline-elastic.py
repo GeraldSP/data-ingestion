@@ -6,7 +6,7 @@ from kfp import dsl, kubernetes, compiler
 from kfp.dsl import Artifact, Input, Output
 
 @dsl.component(
-    base_image="python:3.11",
+    base_image="python:3 .11",
     packages_to_install=[
         "langchain-community==0.3.8",
         "langchain==0.3.8",
@@ -22,7 +22,7 @@ def format_documents(splits_artifact: Output[Artifact]):
     from langchain_core.documents import Document
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-    print("📄 Starting PDF ingestion...")
+    print("Starting PDF ingestion...")
 
     pdf_dir = "/data/pdfs"
     chunk_size = 2048
@@ -52,7 +52,7 @@ def format_documents(splits_artifact: Output[Artifact]):
                     "metadata": split.metadata
                 })
 
-    print(f"✅ Finished splitting {len(all_splits)} chunks from PDFs.")
+    print(f"Finished splitting {len(all_splits)} chunks from PDFs.")
 
     with open(splits_artifact.path, "w") as f:
         f.write(json.dumps([{
