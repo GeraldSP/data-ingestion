@@ -13,6 +13,9 @@ from kfp.dsl import Artifact, Input, Output
         "pypdf==4.0.2",
         "tqdm==4.66.2",
     ],
+    mounts=[
+        dsl.Mount(pvc="pdf-storage", mount_path="/data/pdfs")
+    ],
 )
 def format_documents(splits_artifact: Output[Artifact]):
     import json
@@ -71,6 +74,9 @@ def format_documents(splits_artifact: Output[Artifact]):
         "langchain-elasticsearch==0.3.0",
         "sentence-transformers==2.4.0",
         "einops==0.7.0",
+    ],
+    mounts=[
+        dsl.Mount(pvc="pdf-storage", mount_path="/data/pdfs")
     ],
 )
 def ingest_documents(input_artifact: Input[Artifact]):
@@ -139,11 +145,9 @@ def ingestion_pipeline():
     # volume = dsl.PipelineVolume(pvc="pdf-storage")
     
     format_docs_task = format_documents()
-    format_docs_task.add_pvolumes({"/data/pdfs": dsl.Volume(pvc="pdf-storage")})
     format_docs_task.set_accelerator_type("nvidia.com/gpu").set_accelerator_limit("1")
 
     ingest_docs_task = ingest_documents(input_artifact=format_docs_task.outputs["splits_artifact"])
-    ingest_docs_task.add_pvolumes({"/data/pdfs": dsl.Volume(pvc="pdf-storage")})
     ingest_docs_task.set_accelerator_type("nvidia.com/gpu").set_accelerator_limit("1")
 
     kubernetes.use_secret_as_env(
