@@ -136,18 +136,20 @@ def ingest_documents(input_artifact: Input[Artifact]):
 
 @dsl.pipeline(name="PDF Ingestion Pipeline")
 def ingestion_pipeline():
-    pvc1 = kubernetes.CreatePVC(
-        pvc_name='pdf-storage',
-        access_modes=['ReadWriteOnce'],
-        size='5Gi',
-    )    
+    # pvc_pdf_storage = kubernetes.CreatePVC(
+    #     pvc_name='pdf-storage',
+    #     access_modes=['ReadWriteOnce'],
+    #     size='5Gi',
+    # )    
+
+    pvc_pdf_storage = "pdf-storage"
 
     format_docs_task = format_documents()
     format_docs_task.set_accelerator_type("nvidia.com/gpu").set_accelerator_limit("1")
 
     kubernetes.mount_pvc(
         format_docs_task,
-        pvc_name=pvc1.outputs['name'],
+        pvc_name=pvc_pdf_storage,
         mount_path='/data/pdfs',
     )
 
@@ -156,7 +158,7 @@ def ingestion_pipeline():
 
     kubernetes.mount_pvc(
         ingest_docs_task,
-        pvc_name=pvc1.outputs['name'],
+        pvc_name=pvc_pdf_storage,
         mount_path='/data/pdfs',
     )
     kubernetes.use_secret_as_env(
